@@ -1,20 +1,13 @@
 import React, { useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
+import { useTheme } from '@material-ui/core/styles';
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
+import useMediaQuery from '@material-ui/core/useMediaQuery';
+import { v4 as uuid } from 'uuid';
+import PropTypes from 'prop-types';
 
-const useStyles = makeStyles(theme => ({
-  root: {
-    margin: "2rem",
-    padding: "2rem",
-    background: "rgba(254, 255, 254, 0.8)",
-    borderRadius: "1rem",
-    "& .MuiTextField-root": {
-      margin: '.5rem 0'
-    }
-  }
-}));
-
+// mensajes para validar formulario
 const validationForm = {
   mascota:[
     {
@@ -42,22 +35,49 @@ const validationForm = {
     }
   ]
 }
-const Form = () => {
-  // state Form
-  const [cita, changeCita] = useState({
-    mascota: "",
-    propietario: "",
-    fecha: "",
-    hora: "",
-    sintomas: "",
-    errors: {}
-  });
+
+// initialState para el componente
+const initialState = {
+  mascota: "",
+  propietario: "",
+  fecha: "",
+  hora: "",
+  sintomas: "",
+  errors: {}
+}
+
+/**
+ * Form Component
+ * @property crearCita funcion para crear cita
+ */
+const Form = ({crearCita}) => {
+  // Manejo de MaterialUI
+  const theme = useTheme();
+  const matches = useMediaQuery(theme.breakpoints.up('sm'));
+  const useStyles = makeStyles(theme => ({
+    root: {
+      margin: (matches) ? "2rem" : 0,
+      padding: (matches) ? "2rem" : "1rem",
+      background: "rgba(254, 255, 254)",
+      borderRadius: ".2rem",
+      "& .MuiTextField-root": {
+        margin: '.5rem 0'
+      }
+    }
+  }));
   const classes = useStyles();
 
+  // estado de Cita
+  const [cita, changeCita] = useState(initialState);
+
+  /**
+   * Funcion que permite validar el formulario completo
+   */
   const handleChange = e => {
+    // Busca si encuentra validaciones para el campo editado
     const validations = (validationForm[e.target.name]) ? validationForm[e.target.name] : null
     let error = cita.errors
-    if (validations) {
+    if (validations) { // Si consigue validaciones agrega o quita el error
       for(const val of validations) {
         if (val.required && e.target.value === '') {
           error[e.target.name] = val.required
@@ -66,6 +86,7 @@ const Form = () => {
         }
       }
     }
+    // Actualiza el estado
     changeCita({
       ...cita,
       [e.target.name]: e.target.value,
@@ -75,7 +96,9 @@ const Form = () => {
     });
   };
 
-  const { mascota, propietario, fecha, hora, sintomas, errors } = cita;
+  /**
+   * Permite validar el formulario antes de ser enviado
+   */
   const submitCita = e => {
     e.preventDefault()
     let error = cita.errors
@@ -88,7 +111,6 @@ const Form = () => {
         }
       }
     }
-    console.log(error)
     if (Object.keys(error).length > 0) {
       changeCita({
         ...cita,
@@ -96,15 +118,17 @@ const Form = () => {
           ...error
         }
       });
+      return
     }
-
-    console.log(cita)
+    cita.id = uuid()
+    crearCita(cita)
+    changeCita(initialState)
   }
+  const { mascota, propietario, fecha, hora, sintomas, errors } = cita;
 
   return (
     <div>
       <h2>Crear Cita</h2>
-
       <form className={classes.root} noValidate autoComplete="off" onSubmit={submitCita}>
         <div>
           <TextField
@@ -134,6 +158,10 @@ const Form = () => {
             type="date"
             variant="outlined"
             name="fecha"
+            label="fecha de la cita"
+            InputLabelProps={{
+              shrink: true,
+            }}
             value={fecha}
             onChange={handleChange}
             error={(errors.fecha) ? true : false}
@@ -145,6 +173,10 @@ const Form = () => {
             type="time"
             variant="outlined"
             name="hora"
+            label="Hora de la cita"
+            InputLabelProps={{
+              shrink: true,
+            }}
             value={hora}
             onChange={handleChange}
             error={(errors.hora) ? true : false}
@@ -172,5 +204,9 @@ const Form = () => {
     </div>
   );
 };
+
+Form.propTypes = {
+  crearCita: PropTypes.func.isRequired
+}
 
 export default Form;
